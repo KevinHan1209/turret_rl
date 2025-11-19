@@ -1,0 +1,25 @@
+# Core dependencies for Turret RL environment
+
+# Reinforcement learning
+gymnasium>=0.29.0
+stable-baselines3>=2.1.0
+
+# Scientific computing
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Visualization
+matplotlib>=3.6.0
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.8  # For MP4 video encoding
+
+# Deep learning backend (for Stable-Baselines3)
+torch>=2.0.0
+
+# Logging and monitoring
+tensorboard>=2.14.0
+pandas>=2.0.0  # For reading training logs
+
+# Optional but recommended
+tqdm>=4.66.0  # Progress bars
+Pillow>=10.0.0  # Better image handling

@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Conda
+.conda/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Training outputs
+models/
+!models/.gitkeep
+videos/
+!videos/.gitkeep
+logs/
+
+# TensorBoard
+runs/
+events.out.tfevents.*
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+
+# Model checkpoints
+*.zip
+*.pkl
+*.pth
+*.pt
+
+# Data files
+data/
+*.npy
+*.npz
+
+# OS specific
+Thumbs.db
+.DS_Store
