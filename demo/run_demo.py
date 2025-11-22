@@ -182,6 +182,23 @@ def save_frames_as_video(frames, output_path, fps=20):
             writer.append_data(frame)
 
 
+def get_default_model_path():
+    """Get the appropriate default model based on platform."""
+    import platform
+    import os
+    
+    system = platform.system()
+    mac_model = "turret_rl/models/turret_sac/turret_sac_mac_clean.zip"
+    linux_model = "turret_rl/models/turret_sac/turret_sac_final.zip"
+    
+    # Check if Mac model exists when on macOS
+    if system == "Darwin" and os.path.exists(mac_model):
+        print(f"Detected macOS - using Mac-compatible model: {mac_model}")
+        return mac_model
+    
+    # Default to Linux/original model
+    return linux_model
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run demo of trained Turret vs Drone SAC agent",
@@ -191,7 +208,7 @@ def main():
     parser.add_argument(
         "--model",
         type=str,
-        default="turret_rl/models/turret_sac/turret_sac_final.zip",
+        default=get_default_model_path(),
         help="Path to trained model"
     )
     parser.add_argument(

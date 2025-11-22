@@ -4,13 +4,27 @@ A reinforcement learning environment where a stationary turret must intercept a 
 
 ## Quick Start
 
+### Linux
 ```bash
-# Setup (uses pip for faster installation)
+# Setup environment
 ./setup.sh
 conda activate turret_rl
 
-# Run demo (saves video to demo/demo_output.mp4)
+# Run demo with pre-trained model (saves video to demo/demo_output.mp4)
 python demo/run_demo.py
+
+# Train new model
+python -m turret_rl.agents.train_sac --timesteps 1000000
+```
+
+### macOS
+```bash
+# Setup environment (Mac-specific script)
+./setup_mac.sh
+conda activate turret_rl
+
+# Run demo (auto-detects Mac model)
+python demo/run_demo.py --no-video  # Use --no-video if rendering hangs
 
 # Train new model
 python -m turret_rl.agents.train_sac --timesteps 1000000
@@ -122,18 +136,44 @@ Where `p_d` is drone position, `v_d` is drone velocity, `u = [cos(θ), sin(θ)]`
 
 ## Installation
 
+### Linux/Ubuntu (Recommended)
+
 ```bash
-# Recommended: Use setup script (faster - uses pip instead of conda for packages)
+# Use setup script (faster - uses pip instead of conda for packages)
 ./setup.sh
 conda activate turret_rl
+```
 
-# Alternative: Pure conda (slower)
+### macOS
+
+```bash
+# Use the Mac-specific setup script (handles NumPy/PyTorch compatibility)
+./setup_mac.sh
+conda activate turret_rl
+
+# Alternative: Manual installation
+conda create -n turret_rl python=3.10
+conda activate turret_rl
+pip install "numpy<2.0"  # Use NumPy 1.x for compatibility
+pip install -r requirements.txt
+```
+
+### Alternative Installation Methods
+
+```bash
+# Pure conda (slower)
 conda env create -f environment.yml
 conda activate turret_rl
 
 # Or pip only (if you already have Python 3.10+)
 pip install -r requirements.txt
 ```
+
+### Platform Compatibility Notes
+
+- **Linux**: Full compatibility with all features
+- **macOS**: Use the Mac-compatible model (`turret_sac_mac_clean.zip`) for demos
+- **NumPy Version**: The environment works with both NumPy 1.x and 2.x, but pre-trained models may require conversion between versions
 
 ---
 
@@ -240,12 +280,33 @@ python -m turret_rl.agents.train_ppo --n-envs 8 --lr 1e-4 --no-normalize
 ### Demo
 
 ```bash
+# Run demo with default model (Linux/original)
 python demo/run_demo.py                          # Run demo, save video
 python demo/run_demo.py --episodes 10            # More episodes
 python demo/run_demo.py --no-video               # Stats only
+
+# macOS users: Use Mac-compatible model
+python demo/run_demo.py --model turret_rl/models/turret_sac/turret_sac_mac_clean.zip
+python demo/run_demo.py --model turret_rl/models/turret_sac/turret_sac_mac_clean.zip --episodes 10
+
+# Note: If video rendering hangs on macOS, use --no-video flag
+python demo/run_demo.py --no-video --episodes 10
 ```
 
-Pre-trained model: `turret_rl/models/turret_sac/turret_sac_final.zip`
+**Pre-trained models:**
+- **Linux/Original**: `turret_rl/models/turret_sac/turret_sac_final.zip` (trained with NumPy 2.3.5)
+- **macOS Compatible**: `turret_rl/models/turret_sac/turret_sac_mac_clean.zip` (works with NumPy 1.x)
+
+**Converting Models Between Platforms:**
+
+If you trained a model on Linux and need to run it on macOS (or vice versa), use the conversion script:
+
+```bash
+# Convert Linux model to Mac-compatible version
+python convert_weights_only.py
+
+# This will create turret_sac_mac_clean.zip from turret_sac_final.zip
+```
 
 ### Interactive Testing
 

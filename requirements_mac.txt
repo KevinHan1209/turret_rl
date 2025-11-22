@@ -1,0 +1,17 @@
+# Requirements for macOS
+# Uses NumPy 1.x for compatibility with pre-compiled PyTorch wheels
+
+numpy<2.0
+torch>=2.2.0
+torchvision
+stable-baselines3>=2.2.0
+gymnasium>=0.29.0
+matplotlib>=3.5.0
+imageio>=2.25.0
+imageio-ffmpeg>=0.4.8
+tqdm>=4.65.0
+rich>=13.0.0
+tensorboard>=2.11.0
+wandb>=0.15.0
+cloudpickle>=2.2.0
+pandas>=1.5.0
