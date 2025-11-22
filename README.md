@@ -5,8 +5,8 @@ A reinforcement learning environment where a stationary turret must intercept a 
 ## Quick Start
 
 ```bash
-# Setup
-conda env create -f environment.yml
+# Setup (uses pip for faster installation)
+./setup.sh
 conda activate turret_rl
 
 # Run demo (saves video to demo/demo_output.mp4)
@@ -123,11 +123,15 @@ Where `p_d` is drone position, `v_d` is drone velocity, `u = [cos(θ), sin(θ)]`
 ## Installation
 
 ```bash
-# Conda (recommended)
+# Recommended: Use setup script (faster - uses pip instead of conda for packages)
+./setup.sh
+conda activate turret_rl
+
+# Alternative: Pure conda (slower)
 conda env create -f environment.yml
 conda activate turret_rl
 
-# Or pip
+# Or pip only (if you already have Python 3.10+)
 pip install -r requirements.txt
 ```
 
