@@ -1,14 +1,26 @@
 # Turret vs Drone - Single-Shot RL Environment
 
-A reinforcement learning environment where a stationary turret must make a **single decisive shot** to intercept a moving drone. Implemented using Gymnasium and trained with **Soft Actor-Critic (SAC)**.
+A reinforcement learning environment where a stationary turret must intercept a moving drone with a single shot. Trained with Soft Actor-Critic (SAC).
+
+## Quick Start
+
+```bash
+# Setup
+conda env create -f environment.yml
+conda activate turret_rl
+
+# Run demo (saves video to demo/demo_output.mp4)
+python demo/run_demo.py
+
+# Train new model
+python -m turret_rl.agents.train_sac --timesteps 1000000
+```
+
+---
 
 ## Problem Formulation
 
-The agent controls a stationary turret at the origin `(0, 0)`. A drone flies across the battlefield in a straight line at constant velocity. The agent observes the drone's position and velocity and must decide:
-1. **When to shoot** (timing)
-2. **Where to shoot** (aiming angle)
-
-**Key constraint**: The agent can fire **at most once per episode**. When the agent fires, the environment immediately determines whether the shot will intercept the drone using analytic physics, and the episode terminates with a reward based on hit/miss.
+The agent controls a turret at the origin that must fire once to intercept a drone flying across the battlefield. The agent observes position and velocity, then decides when and where to shoot.
 
 ---
 
@@ -111,18 +123,12 @@ Where `p_d` is drone position, `v_d` is drone velocity, `u = [cos(θ), sin(θ)]`
 ## Installation
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd 9Mothers_TakeHome
+# Conda (recommended)
+conda env create -f environment.yml
+conda activate turret_rl
 
-# Install dependencies
+# Or pip
 pip install -r requirements.txt
-
-# Or manually install core dependencies:
-pip install gymnasium numpy stable-baselines3 matplotlib imageio imageio-ffmpeg
-
-# Optional: Install wandb for experiment tracking
-pip install wandb
 ```
 
 ---
@@ -227,48 +233,15 @@ python -m turret_rl.agents.train_ppo --n-envs 8 --lr 1e-4 --no-normalize
 
 **Note:** SAC is recommended over PPO for this environment due to better sample efficiency and exploration.
 
-### Evaluation
-
-Evaluate a trained SAC model and record videos:
+### Demo
 
 ```bash
-# Basic evaluation (5 episodes, deterministic)
-python -m turret_rl.scripts.evaluate_and_record \
-    --model turret_rl/models/turret_sac/turret_sac.zip \
-    --episodes 10
-
-# Specify algorithm explicitly (auto-detected by default)
-python -m turret_rl.scripts.evaluate_and_record \
-    --model turret_rl/models/turret_sac/turret_sac.zip \
-    --algorithm SAC \
-    --episodes 20
-
-# With VecNormalize statistics (if used during training)
-python -m turret_rl.scripts.evaluate_and_record \
-    --model turret_rl/models/turret_sac/turret_sac.zip \
-    --vec-normalize turret_rl/models/turret_sac/vec_normalize.pkl \
-    --episodes 20 \
-    --video-dir turret_rl/videos/eval_custom/
-
-# Stochastic policy (for diversity)
-python -m turret_rl.scripts.evaluate_and_record \
-    --model turret_rl/models/turret_sac/turret_sac.zip \
-    --stochastic \
-    --episodes 50
-
-# Evaluate PPO model (legacy)
-python -m turret_rl.scripts.evaluate_and_record \
-    --model turret_rl/models/turret_ppo/turret_ppo.zip \
-    --algorithm PPO \
-    --episodes 10
-
-# Compare multiple models
-python -m turret_rl.scripts.evaluate_and_record \
-    --compare \
-    turret_sac.zip turret_ppo.zip model3.zip
+python demo/run_demo.py                          # Run demo, save video
+python demo/run_demo.py --episodes 10            # More episodes
+python demo/run_demo.py --no-video               # Stats only
 ```
 
-**Note:** The evaluation script automatically detects whether a model was trained with SAC or PPO based on the model file contents and filename.
+Pre-trained model: `turret_rl/models/turret_sac/turret_sac_final.zip`
 
 ### Interactive Testing
 
@@ -398,143 +371,6 @@ n_epochs: int = 10                 # PPO epochs per update
 **Bullet Visualization:** Bullets are created for rendering but **not included in the observation vector**. This allows realistic visualization while keeping the observation space minimal (4D).
 
 **Drone Trajectory Sampling:** Drones spawn on the world boundary and fly in a straight line, guaranteed to pass within 100m of origin with speed sampled from `[20, 80]` m/s. See [turret_env.py:123](turret_rl/envs/turret_env.py#L123).
-
----
-
-## Expected Training Performance
-
-### SAC Performance Milestones
-
-| Timesteps | Hit Rate | Behavior |
-|-----------|----------|----------|
-| 0-10k | 0-5% | Random exploration (filling replay buffer) |
-| 10k-50k | 5-25% | Learning basic aiming patterns |
-| 50k-150k | 25-50% | Improving timing and interception |
-| 150k-300k | 50-75% | Consistent hits, good decision-making |
-| 300k-500k | 75-90% | Near-optimal performance |
-
-**SAC advantages:**
-- Faster initial learning due to replay buffer
-- More stable training (off-policy updates)
-- Better exploration through entropy regularization
-- Superior sample efficiency (learns from all experiences)
-
-### PPO Performance (Legacy)
-
-| Timesteps | Hit Rate | Behavior |
-|-----------|----------|----------|
-| 0-50k | 0-10% | Random firing, poor timing |
-| 50k-150k | 10-40% | Learning to wait, improving aim |
-| 150k-300k | 40-70% | Consistent interception, good timing |
-| 300k+ | 70-90% | Near-optimal performance |
-
-**Monitor training with TensorBoard:**
-```bash
-# For SAC
-tensorboard --logdir turret_rl/models/turret_sac/logs/
-
-# For PPO
-tensorboard --logdir turret_rl/models/turret_ppo/logs/
-```
-
-**Key metrics to monitor:**
-- `rollout/ep_rew_mean`: Average episode reward
-- `train/actor_loss`: Actor network loss (SAC)
-- `train/critic_loss`: Critic network loss (SAC)
-- `train/ent_coef`: Entropy coefficient (SAC, if auto-tuned)
-- `train/entropy_loss`: Policy entropy (PPO)
-- Custom callback metrics: `hit_rate`, `episode_length`
-
----
-
-## Troubleshooting
-
-### Low Hit Rate (<20% after 200k steps)
-
-**For SAC:**
-- Learning rate too high/low → Try `--lr 1e-4` or `--lr 5e-4`
-- Small replay buffer → Increase `--buffer-size 500000`
-- Not enough learning → Increase `--gradient-steps 2` or `--train-freq 2`
-- Insufficient exploration → Check `train/ent_coef` in logs; try manual `--ent-coef 0.2`
-- Training starting too late → Reduce `--learning-starts 500`
-
-**For PPO (legacy):**
-- Learning rate too high/low → Try `--lr 1e-4` or `--lr 1e-3`
-- Insufficient exploration → Increase `ent_coef` in config
-- Normalization disabled → Ensure VecNormalize is active
-- Too few environments → Increase `--n-envs` to 8 or 16
-
-### Agent Never Fires
-
-**Symptoms:** `shot_result = 'no_shot_timeout'` in most episodes
-
-**Fixes (SAC):**
-- SAC should explore naturally; check that `train/ent_coef` > 0
-- Verify reward config: `no_shot_penalty` should be very negative (-5.0)
-- Check action output: run eval with `--stochastic` to verify action[1] distribution
-- Increase exploration: set `--ent-coef 0.2` (if using manual tuning)
-
-**Fixes (PPO):**
-- Increase step penalty magnitude: `step_penalty = -0.01`
-- Reduce miss penalty to encourage exploration: `miss_penalty = -0.5`
-- Check action space: ensure `action[1]` can exceed 0
-
-### Agent Fires Immediately Every Episode
-
-**Symptoms:** Fires at step 0-1 every episode, even with low hit rate
-
-**Root Cause:** The `step_penalty` creates a perverse incentive. If `step_penalty = -0.001`, waiting for a better shot is punished:
-```
-Fire immediately:  +1.0 - 0.001×1  = +0.999
-Wait 50 steps:     +1.0 - 0.001×50 = +0.950  (worse!)
-```
-
-**Fixes:**
-1. **Set `step_penalty = 0.0`** in [config.py](turret_rl/config/config.py) (recommended)
-2. Make step penalty extremely small: `step_penalty = -0.00001`
-3. Use reward shaping based on drone proximity instead
-4. Retrain the model after changing the reward structure
-
-**Note:** This is the **intended behavior** with the original `step_penalty = -0.001`. The agent correctly learned to minimize accumulated penalties by firing immediately. Change the config to fix this.
-
-### "VecNormalize statistics not found" Warning
-
-**Note:** SAC training does **not require** VecNormalize by default (unlike PPO). Only provide normalization stats if you trained with `--normalize`:
-
-```bash
-# Only if you used --normalize during training
-python -m turret_rl.scripts.evaluate_and_record \
-    --model turret_rl/models/turret_sac/turret_sac.zip \
-    --vec-normalize turret_rl/models/turret_sac/vec_normalize.pkl
-```
-
-For standard SAC training without normalization, simply run:
-```bash
-python -m turret_rl.scripts.evaluate_and_record \
-    --model turret_rl/models/turret_sac/turret_sac.zip
-```
-
----
-
-## Algorithm Comparison: SAC vs PPO
-
-| Feature | SAC (Recommended) | PPO |
-|---------|-------------------|-----|
-| **Policy Type** | Off-policy | On-policy |
-| **Sample Efficiency** | High (replay buffer) | Moderate |
-| **Training Stability** | Very stable | Stable |
-| **Exploration** | Entropy-regularized | Entropy bonus |
-| **Memory Usage** | Higher (replay buffer) | Lower |
-| **Continuous Actions** | Excellent | Good |
-| **Short Episodes** | Excellent | Good |
-| **Parallelization** | Single env sufficient | Benefits from many envs |
-| **Hyperparameter Tuning** | Easier (auto-tuning) | More sensitive |
-
-**Recommendation:** Use **SAC** for this environment due to:
-1. Superior sample efficiency with the replay buffer
-2. Better handling of continuous action spaces
-3. More effective exploration through entropy maximization
-4. Ideal for single-shot, short-horizon episodes
 
 ---
 

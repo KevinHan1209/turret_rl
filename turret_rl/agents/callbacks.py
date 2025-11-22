@@ -214,7 +214,7 @@ class VideoRecorderCallback(BaseCallback):
                 'length': episode_length,
                 'total_reward': episode_reward,
                 'hit': hit,
-                'shots_fired': step_info.get('active_bullets', 0),
+                'shots_fired': 1 if shot_fired else 0,
                 'drone_speed': episode_info['drone_speed'],
                 'rewards': episode_info['rewards'],
                 'distances': episode_info['distances']

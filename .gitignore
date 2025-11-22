@@ -44,6 +44,7 @@ turret_rl/logs/
 
 # Videos (large files)
 turret_rl/videos/
+demo/*.mp4
 *.mp4
 *.gif
 

@@ -121,6 +121,7 @@ class TurretEnv(gym.Env):
         # Single-shot tracking
         self.shot_taken: bool = False  # Flag to track if shot has been fired
         self.shot_result: Optional[str] = None  # 'hit', 'miss', or None
+        self.drone_hit: bool = False  # Flag for visualization - True when drone is visually hit
 
         # Rendering setup
         self.figure = None
@@ -235,6 +236,7 @@ class TurretEnv(gym.Env):
         # Reset single-shot tracking
         self.shot_taken = False
         self.shot_result = None
+        self.drone_hit = False
 
         # Get initial observation
         obs = self._get_observation()
@@ -616,11 +618,15 @@ class TurretEnv(gym.Env):
 
         # Draw drone
         if self.drone_pos is not None:
+            # Use green if drone was hit, red otherwise
+            drone_color = 'green' if self.drone_hit else 'red'
+            drone_label = 'Drone (HIT)' if self.drone_hit else 'Drone'
+
             drone_circle = patches.Circle(
                 self.drone_pos,
                 self.world_config.drone_radius,
-                color='red',
-                label='Drone'
+                color=drone_color,
+                label=drone_label
             )
             self.ax.add_patch(drone_circle)
 
@@ -634,8 +640,8 @@ class TurretEnv(gym.Env):
                 self.drone_vel[1] * vel_scale,
                 head_width=2,
                 head_length=1,
-                fc='red',
-                ec='red',
+                fc=drone_color,
+                ec=drone_color,
                 alpha=0.7
             )
 
@@ -656,7 +662,13 @@ class TurretEnv(gym.Env):
         # Add info text
         info_text = f"Active Bullets: {sum(1 for b in self.bullets if b.active)}\n"
         info_text += f"Drone Speed: {np.linalg.norm(self.drone_vel):.1f} m/s\n"
-        info_text += f"Distance to Drone: {np.linalg.norm(self.drone_pos):.1f} m"
+        info_text += f"Distance to Drone: {np.linalg.norm(self.drone_pos):.1f} m\n"
+        if self.drone_hit:
+            info_text += "Status: HIT!"
+        elif self.shot_result == 'miss':
+            info_text += "Status: MISS"
+        elif self.shot_taken:
+            info_text += "Status: Shot fired..."
         self.ax.text(
             0.02, 0.98, info_text,
             transform=self.ax.transAxes,
@@ -694,15 +706,41 @@ class TurretEnv(gym.Env):
         frames = []
 
         for i in range(n_steps):
+            # Store previous positions for collision detection
+            prev_drone_pos = self.drone_pos.copy() if self.drone_pos is not None else None
+
             # Update drone position
             if self.drone_pos is not None:
                 self.drone_pos = self.drone_pos + self.drone_vel * self.dt
 
-            # Update bullets
+            # Update bullets and check for collisions
             for bullet in self.bullets:
                 if bullet.active:
+                    prev_bullet_pos = bullet.position.copy()
                     bullet.position = bullet.position + bullet.velocity * self.dt
                     bullet.distance_traveled += np.linalg.norm(bullet.velocity) * self.dt
+
+                    # Check for collision with drone (if not already hit)
+                    if not self.drone_hit and self.drone_pos is not None:
+                        # Use segment-sphere intersection for accurate collision detection
+                        # Check against both previous and current drone positions for robustness
+                        hit_current = self._check_segment_sphere_intersection(
+                            prev_bullet_pos,
+                            bullet.position,
+                            self.drone_pos,
+                            self.world_config.drone_radius
+                        )
+                        hit_prev = self._check_segment_sphere_intersection(
+                            prev_bullet_pos,
+                            bullet.position,
+                            prev_drone_pos if prev_drone_pos is not None else self.drone_pos,
+                            self.world_config.drone_radius
+                        )
+
+                        if hit_current or hit_prev:
+                            self.drone_hit = True
+                            bullet.active = False  # Bullet stops on hit
+
                     if bullet.distance_traveled >= self.world_config.bullet_max_range:
                         bullet.active = False
 
