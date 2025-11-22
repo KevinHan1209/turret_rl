@@ -37,16 +37,10 @@ env/
 .ipynb_checkpoints/
 
 # Models and logs (large files)
-turret_rl/models/
 turret_rl/logs/
 *.zip
 *.pkl
 
-# Videos (large files)
-turret_rl/videos/
-demo/*.mp4
-*.mp4
-*.gif
 
 # Weights & Biases
 wandb/
